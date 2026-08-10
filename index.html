@@ -2042,7 +2042,6 @@
             border-color: #38d8c0;
             color: #38d8c0;
         }
-        /* Botão seletor de empresa estilo validação elegante */
         .empresa-selector {
             display: inline-flex;
             align-items: center;
@@ -2083,7 +2082,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Grupo Andrade</div>
+                <div class="login-title">🚛 Transporte Unificado</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2170,7 +2169,6 @@
             <label>Intervalo &nbsp;<span class="lbl-ok">● Fixo</span></label>
             <input type="text" id="range-input" value="CONSULTA B6:O | SOBRA D3:Q" readonly style="min-width:80px;">
         </div>
-        <!-- Seletor de empresa -->
         <div class="fg" style="border-left:1px solid rgba(255,255,255,.12); padding-left:16px; margin-left:4px;">
             <label>Empresa</label>
             <div class="empresa-selector" id="empresa-selector">
@@ -2462,7 +2460,7 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA',
-                sheet_sobra: '🍁 CONSULTA SOBRA',
+                sheet_sobra: 'CONSULTA', // Alterado: agora usa a mesma aba
                 range_consulta: 'B6:P',
                 range_sobra: 'D3:Q',
                 css: {
@@ -2480,7 +2478,7 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA META',
-                sheet_sobra: 'CONSULTA SOBRA META',
+                sheet_sobra: 'CONSULTA META', // Alterado: agora usa a mesma aba
                 range_consulta: 'B6:P',
                 range_sobra: 'D3:Q',
                 css: {
@@ -2498,7 +2496,7 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA MAFRIOS',
-                sheet_sobra: 'CONSULTA SOBRA MAFRIOS',
+                sheet_sobra: 'CONSULTA MAFRIOS', // Alterado: agora usa a mesma aba
                 range_consulta: 'B6:P',
                 range_sobra: 'D3:Q',
                 css: {
