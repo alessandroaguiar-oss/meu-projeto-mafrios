@@ -2460,9 +2460,9 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA',
-                sheet_sobra: 'CONSULTA', // Alterado: agora usa a mesma aba
+                sheet_sobra: 'CONSULTA',
                 range_consulta: 'B6:P',
-                range_sobra: 'D3:Q',
+                range_sobra: 'B6:P',
                 css: {
                     heroBg: '#0d2a40',
                     heroBg2: '#0a1e2e',
@@ -2478,9 +2478,9 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA META',
-                sheet_sobra: 'CONSULTA META', // Alterado: agora usa a mesma aba
+                sheet_sobra: 'CONSULTA META',
                 range_consulta: 'B6:P',
-                range_sobra: 'D3:Q',
+                range_sobra: 'B6:P',
                 css: {
                     heroBg: '#022602',
                     heroBg2: '#0a1e2e',
@@ -2496,9 +2496,9 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA MAFRIOS',
-                sheet_sobra: 'CONSULTA MAFRIOS', // Alterado: agora usa a mesma aba
+                sheet_sobra: 'CONSULTA MAFRIOS',
                 range_consulta: 'B6:P',
-                range_sobra: 'D3:Q',
+                range_sobra: 'B6:P',
                 css: {
                     heroBg: '#4d0000',
                     heroBg2: '#0a1e2e',
@@ -2537,9 +2537,11 @@
         const FALTA_DIVERG_FILTRO = 'RESULTADO FORA DO INDICE DE DIVERGENCIA';
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
+        // Mapeamento para Faltas/Avarias (colunas B a P, índice 0 = A, B=1, C=2, ...)
         const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, MOTORISTA: 9, RESP: 11,
             TRATATIVA: 12 };
-        const CS = { CODIGO: 0, DESCRICAO: 1, QTD: 3, CARGA: 5, MOTORISTA: 7, DATA: 8, VALOR: 13 };
+        // Mapeamento para Sobras (colunas B a O, conforme sua estrutura)
+        const CS = { DATA: 1, CODIGO: 2, DESCRICAO: 3, QTD: 4, VALOR: 8, CARGA: 9, MOTORISTA: 10, MOTIVO: 7 };
 
         // ── Funções de utilidade ──
         function toast(msg, type = 'ok') {
@@ -2707,6 +2709,8 @@
 
             const emp = EMPRESAS[currentEmpresa];
             try {
+                // Agora ambas as consultas são feitas na mesma aba, mas com ranges diferentes se necessário.
+                // Por simplicidade, usamos o mesmo range para ambas.
                 const [rowsFA, rowsS] = await Promise.all([
                     fetchSheet(emp.sheet_consulta, emp.range_consulta),
                     fetchSheet(emp.sheet_sobra, emp.range_sobra)
@@ -2771,6 +2775,7 @@
             const respNorm = FALTA_RESP_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+            // 1. Processar Faltas e Avarias (da aba CONSULTA)
             for (const row of rowsFA) {
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
@@ -2799,7 +2804,14 @@
                 }
             }
 
+            // 2. Processar Sobras (da mesma aba, mas com mapeamento CS)
             for (const row of rowsS) {
+                // Verifica se há motivo "SOBRA" ou se a linha tem dados de sobra
+                const motivoRaw = String(row[CS.MOTIVO] ?? '').trim();
+                const motivo = normMotivo(motivoRaw);
+                // Se não for sobra, pula (opcional, se a planilha não separar)
+                if (motivo !== 'SOBRA') continue;
+
                 const data = String(row[CS.DATA] ?? '').trim();
                 const carga = String(row[CS.CARGA] ?? '').trim();
                 const motorista = String(row[CS.MOTORISTA] ?? '').trim();
