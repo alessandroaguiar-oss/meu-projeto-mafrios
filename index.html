@@ -2082,7 +2082,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Grupo Andrade</div>
+                <div class="login-title">🚛 Transporte Unificado</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2532,28 +2532,26 @@
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
 
-        // Mapeamento para Faltas/Avarias (colunas B a P, índice 0 = A, B=1, C=2, ...)
-        // B=DATA, C=CODIGO, D=DESCRICAO, E=QTD, F=VALOR_UNIT, G=NF, H=MOTIVO, I=VALOR_TOTAL, J=CARGA, K=MOTORISTA, L=AUX, M=STATUS, N=TRATATIVA, O=RESP
+        // Mapeamento das colunas com base na imagem (índice 0 = Coluna A, 1 = Coluna B)
         const CF = {
-            DATA: 1,
-            CODIGO: 2,
-            DESCRICAO: 3,
-            QTD: 4,
-            VALOR: 8,     // I = VALOR TOTAL
-            CARGA: 9,
-            MOTIVO: 7,
-            MOTORISTA: 10,
-            RESP: 14,     // O = RESPONSÁVEL (índice 14)
-            TRATATIVA: 13 // N = TRATATIVA
+            DATA: 1,       // B
+            CODIGO: 2,     // C
+            DESCRICAO: 3,  // D
+            QTD: 4,        // E
+            VALOR: 8,      // I (VL (R$))
+            CARGA: 9,      // J (Nº CARGA)
+            MOTIVO: 7,     // H (MOTIVO)
+            MOTORISTA: 10, // K (MOTORISTA)
+            RESP: 14,      // O (RESPONSÁVEL)
+            TRATATIVA: 13  // N (TRATATIVA)
         };
-
-        // Mapeamento para Sobras (também na mesma aba, colunas B a O)
+        // O mesmo mapeamento serve para Sobras, pois estão na mesma linha
         const CS = {
             DATA: 1,
             CODIGO: 2,
             DESCRICAO: 3,
             QTD: 4,
-            VALOR: 8,     // I = VALOR TOTAL
+            VALOR: 8,
             CARGA: 9,
             MOTORISTA: 10,
             MOTIVO: 7
@@ -2726,7 +2724,8 @@
             const emp = EMPRESAS[currentEmpresa];
             try {
                 const rows = await fetchSheet(emp.sheet_consulta, emp.range_consulta);
-                console.log(`✓ ${currentEmpresa}: ${rows.length} linhas`);
+                console.log(`✓ ${currentEmpresa}: ${rows.length} linhas brutas carregadas.`);
+                
                 if (rows.length === 0) {
                     toast('⚠️ Aba CONSULTA vazia — verifique o intervalo de datas na planilha', 'err');
                     document.getElementById('state-area').innerHTML =
@@ -2785,12 +2784,15 @@
             const map = new Map();
             const respNorm = FALTA_RESP_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            let contFalta = 0, contAvaria = 0, contSobra = 0, contDiverg = 0;
 
             for (const row of rows) {
+                // Extrair dados usando os índices definidos em CF/CS
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
                 const motorista = String(row[CF.MOTORISTA] ?? '').trim();
-                const motivo = normMotivo(row[CF.MOTIVO]);
+                const motivoRaw = String(row[CF.MOTIVO] ?? '').trim();
+                const motivo = normMotivo(motivoRaw);
                 const valor = parseNum(row[CF.VALOR]);
                 const codigo = String(row[CF.CODIGO] ?? '').trim() || '–';
                 const descricao = String(row[CF.DESCRICAO] ?? '').trim() || '(sem descrição)';
@@ -2798,34 +2800,43 @@
                 const resp = String(row[CF.RESP] ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                 const tratativa = String(row[CF.TRATATIVA] ?? '').trim();
 
+                // Ignorar linhas sem carga e sem motivo (consideradas vazias)
                 if (!carga && !data && !motivo) continue;
+
                 const key = carga || ('_fa_' + dateKey(data));
                 const g = getOrCreate(map, key, data, carga, motorista);
                 const item = { codigo, descricao, qtd, valor, tratativa, data };
 
                 if (motivo === 'FALTA') {
+                    contFalta++;
                     if (resp === respNorm) {
                         g.faltas.push(item);
                         g.valFalta += valor;
                     } else if (resp === divergNorm) {
+                        contDiverg++;
                         g.divergencias.push(item);
                     }
                 } else if (motivo === 'AVARIA') {
+                    contAvaria++;
                     g.avarias.push(item);
                     g.valAvaria += valor;
                 } else if (motivo === 'SOBRA') {
+                    contSobra++;
                     g.sobras.push(item);
                     g.valSobra += valor;
                 }
             }
+
+            // Log detalhado no console para depuração
+            console.log(`📊 Contagem bruta: Faltas=${contFalta}, Avarias=${contAvaria}, Sobras=${contSobra}, Divergências=${contDiverg}`);
 
             allRows = Array.from(map.values()).filter(r =>
                 r.faltas.length > 0 || r.avarias.length > 0 || r.sobras.length > 0
             );
             window._allRowsComDiverg = Array.from(map.values());
 
-            console.group('📊 Resultado do processamento');
-            console.log('Carregamentos:', allRows.length);
+            console.group('📊 Resultado final do processamento');
+            console.log('Carregamentos com ocorrências:', allRows.length);
             let tf = 0,
                 ta = 0,
                 ts = 0,
