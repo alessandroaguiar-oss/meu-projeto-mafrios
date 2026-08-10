@@ -2167,7 +2167,7 @@
         </div>
         <div class="fg">
             <label>Intervalo &nbsp;<span class="lbl-ok">● Fixo</span></label>
-            <input type="text" id="range-input" value="CONSULTA B6:O | SOBRA D3:Q" readonly style="min-width:80px;">
+            <input type="text" id="range-input" value="CONSULTA B6:O" readonly style="min-width:80px;">
         </div>
         <div class="fg" style="border-left:1px solid rgba(255,255,255,.12); padding-left:16px; margin-left:4px;">
             <label>Empresa</label>
@@ -2531,11 +2531,33 @@
         const FALTA_DIVERG_FILTRO = 'RESULTADO FORA DO INDICE DE DIVERGENCIA';
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
+
         // Mapeamento para Faltas/Avarias (colunas B a P, índice 0 = A, B=1, C=2, ...)
-        const CF = { DATA: 1, CODIGO: 2, DESCRICAO: 3, QTD: 4, VALOR: 8, CARGA: 9, MOTIVO: 7, MOTORISTA: 10, RESP: 12,
-            TRATATIVA: 13 };
-        // Mapeamento para Sobras (colunas B a O, conforme sua estrutura)
-        const CS = { DATA: 1, CODIGO: 2, DESCRICAO: 3, QTD: 4, VALOR: 8, CARGA: 9, MOTORISTA: 10, MOTIVO: 7 };
+        // B=DATA, C=CODIGO, D=DESCRICAO, E=QTD, F=VALOR_UNIT, G=NF, H=MOTIVO, I=VALOR_TOTAL, J=CARGA, K=MOTORISTA, L=AUX, M=STATUS, N=TRATATIVA, O=RESP
+        const CF = {
+            DATA: 1,
+            CODIGO: 2,
+            DESCRICAO: 3,
+            QTD: 4,
+            VALOR: 8,     // I = VALOR TOTAL
+            CARGA: 9,
+            MOTIVO: 7,
+            MOTORISTA: 10,
+            RESP: 14,     // O = RESPONSÁVEL (índice 14)
+            TRATATIVA: 13 // N = TRATATIVA
+        };
+
+        // Mapeamento para Sobras (também na mesma aba, colunas B a O)
+        const CS = {
+            DATA: 1,
+            CODIGO: 2,
+            DESCRICAO: 3,
+            QTD: 4,
+            VALOR: 8,     // I = VALOR TOTAL
+            CARGA: 9,
+            MOTORISTA: 10,
+            MOTIVO: 7
+        };
 
         // ── Funções de utilidade ──
         function toast(msg, type = 'ok') {
