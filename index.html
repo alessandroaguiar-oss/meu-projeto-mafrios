@@ -2460,9 +2460,7 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA',
-                sheet_sobra: 'CONSULTA',
                 range_consulta: 'B6:P',
-                range_sobra: 'B6:P',
                 css: {
                     heroBg: '#0d2a40',
                     heroBg2: '#0a1e2e',
@@ -2478,9 +2476,7 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA META',
-                sheet_sobra: 'CONSULTA META',
                 range_consulta: 'B6:P',
-                range_sobra: 'B6:P',
                 css: {
                     heroBg: '#022602',
                     heroBg2: '#0a1e2e',
@@ -2496,9 +2492,7 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA MAFRIOS',
-                sheet_sobra: 'CONSULTA MAFRIOS',
                 range_consulta: 'B6:P',
-                range_sobra: 'B6:P',
                 css: {
                     heroBg: '#4d0000',
                     heroBg2: '#0a1e2e',
@@ -2538,8 +2532,8 @@
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
         // Mapeamento para Faltas/Avarias (colunas B a P, índice 0 = A, B=1, C=2, ...)
-        const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, MOTORISTA: 9, RESP: 11,
-            TRATATIVA: 12 };
+        const CF = { DATA: 1, CODIGO: 2, DESCRICAO: 3, QTD: 4, VALOR: 8, CARGA: 9, MOTIVO: 7, MOTORISTA: 10, RESP: 12,
+            TRATATIVA: 13 };
         // Mapeamento para Sobras (colunas B a O, conforme sua estrutura)
         const CS = { DATA: 1, CODIGO: 2, DESCRICAO: 3, QTD: 4, VALOR: 8, CARGA: 9, MOTORISTA: 10, MOTIVO: 7 };
 
@@ -2666,7 +2660,7 @@
         // ── Eventos do seletor ──
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('api-key').value = '*** protegida ***';
-            document.getElementById('range-input').value = 'CONSULTA B6:O | SOBRA D3:Q';
+            document.getElementById('range-input').value = 'CONSULTA B6:O';
 
             const range = calcDateRange();
             DATE_MIN = range.min;
@@ -2701,7 +2695,7 @@
             document.getElementById('btn-load').disabled = true;
             badge('Carregando…', 'loading');
             document.getElementById('state-area').innerHTML =
-                `<div class="state"><div class="spin"></div><h3>Buscando dados…</h3><p>Consultando as abas da planilha…</p></div>`;
+                `<div class="state"><div class="spin"></div><h3>Buscando dados…</h3><p>Consultando a aba da planilha…</p></div>`;
             document.getElementById('state-area').style.display = '';
             document.getElementById('main-table').style.display = 'none';
             document.getElementById('summary').style.display = 'none';
@@ -2709,23 +2703,18 @@
 
             const emp = EMPRESAS[currentEmpresa];
             try {
-                // Agora ambas as consultas são feitas na mesma aba, mas com ranges diferentes se necessário.
-                // Por simplicidade, usamos o mesmo range para ambas.
-                const [rowsFA, rowsS] = await Promise.all([
-                    fetchSheet(emp.sheet_consulta, emp.range_consulta),
-                    fetchSheet(emp.sheet_sobra, emp.range_sobra)
-                ]);
-                console.log(`✓ ${currentEmpresa}: FA ${rowsFA.length} linhas | S ${rowsS.length} linhas`);
-                if (rowsFA.length === 0) {
+                const rows = await fetchSheet(emp.sheet_consulta, emp.range_consulta);
+                console.log(`✓ ${currentEmpresa}: ${rows.length} linhas`);
+                if (rows.length === 0) {
                     toast('⚠️ Aba CONSULTA vazia — verifique o intervalo de datas na planilha', 'err');
                     document.getElementById('state-area').innerHTML =
                         `<div class="state"><div class="state-icon">⚠️</div><h3>Sem dados</h3><p>A aba CONSULTA está vazia. Verifique o intervalo de datas configurado na planilha.</p></div>`;
                     document.getElementById('btn-load').disabled = false;
                     return;
                 }
-                processRows(rowsFA, rowsS);
+                processRows(rows);
                 badge('Atualizado', 'ok');
-                toast(`✓ ${rowsFA.length} linhas FA + ${rowsS.length} linhas sobras`);
+                toast(`✓ ${rows.length} linhas processadas`);
             } catch (e) {
                 const isQuota = e.message.toLowerCase().includes('quota') || e.message.toLowerCase().includes('rate');
                 badge('Erro', 'err');
@@ -2770,13 +2759,12 @@
             return `${y}-${m}-${day}`;
         }
 
-        function processRows(rowsFA, rowsS) {
+        function processRows(rows) {
             const map = new Map();
             const respNorm = FALTA_RESP_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-            // 1. Processar Faltas e Avarias (da aba CONSULTA)
-            for (const row of rowsFA) {
+            for (const row of rows) {
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
                 const motorista = String(row[CF.MOTORISTA] ?? '').trim();
@@ -2787,10 +2775,12 @@
                 const qtd = String(row[CF.QTD] ?? '').trim() || '–';
                 const resp = String(row[CF.RESP] ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                 const tratativa = String(row[CF.TRATATIVA] ?? '').trim();
+
                 if (!carga && !data && !motivo) continue;
                 const key = carga || ('_fa_' + dateKey(data));
                 const g = getOrCreate(map, key, data, carga, motorista);
                 const item = { codigo, descricao, qtd, valor, tratativa, data };
+
                 if (motivo === 'FALTA') {
                     if (resp === respNorm) {
                         g.faltas.push(item);
@@ -2801,30 +2791,10 @@
                 } else if (motivo === 'AVARIA') {
                     g.avarias.push(item);
                     g.valAvaria += valor;
+                } else if (motivo === 'SOBRA') {
+                    g.sobras.push(item);
+                    g.valSobra += valor;
                 }
-            }
-
-            // 2. Processar Sobras (da mesma aba, mas com mapeamento CS)
-            for (const row of rowsS) {
-                // Verifica se há motivo "SOBRA" ou se a linha tem dados de sobra
-                const motivoRaw = String(row[CS.MOTIVO] ?? '').trim();
-                const motivo = normMotivo(motivoRaw);
-                // Se não for sobra, pula (opcional, se a planilha não separar)
-                if (motivo !== 'SOBRA') continue;
-
-                const data = String(row[CS.DATA] ?? '').trim();
-                const carga = String(row[CS.CARGA] ?? '').trim();
-                const motorista = String(row[CS.MOTORISTA] ?? '').trim();
-                const valor = parseNum(row[CS.VALOR]);
-                const codigo = String(row[CS.CODIGO] ?? '').trim() || '–';
-                const descricao = String(row[CS.DESCRICAO] ?? '').trim() || '(sem descrição)';
-                const qtd = String(row[CS.QTD] ?? '').trim() || '–';
-                if (!carga && !data) continue;
-                const key = carga || ('_s_' + dateKey(data));
-                const g = getOrCreate(map, key, data, carga, motorista);
-                const item = { codigo, descricao, qtd, valor, data };
-                g.sobras.push(item);
-                g.valSobra += valor;
             }
 
             allRows = Array.from(map.values()).filter(r =>
