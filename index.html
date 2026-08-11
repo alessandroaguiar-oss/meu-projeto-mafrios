@@ -2144,8 +2144,8 @@
         <div class="hero-marquee-wrap">
             <div class="hero-marquee-label">Painel Operacional · <span id="empresa-nome">Transporte Andrade</span></div>
             <div class="marquee-track">
-                <span class="marquee-text" id="marquee-a"><span class="t-reg">Registro de</span><span class="t-main">Faltas, Sobras e Avarias</span><span class="t-sep">|</span><span class="t-sub" id="sub-a">Transporte · Andrade Distribuidor</span></span>
-                <span class="marquee-text" id="marquee-b"><span class="t-reg">Registro de</span><span class="t-main">Faltas, Sobras e Avarias</span><span class="t-sep">|</span><span class="t-sub" id="sub-b">Transporte · Andrade Distribuidor</span></span>
+                <span class="marquee-text" id="marquee-a"><span class="t-reg">Registro de</span><span class="t-main">Faltas, Sobras e Avarias</span><span class="t-sep">|</span><span class="t-sub" id="sub-a">Transporte · Transporte Andrade</span></span>
+                <span class="marquee-text" id="marquee-b"><span class="t-reg">Registro de</span><span class="t-main">Faltas, Sobras e Avarias</span><span class="t-sep">|</span><span class="t-sub" id="sub-b">Transporte · Transporte Andrade</span></span>
             </div>
         </div>
         <div class="hero-truck">
@@ -2675,7 +2675,6 @@
 
             document.getElementById('logo-img').src = data.logo || '';
             document.getElementById('truck-img').src = data.truck || '';
-            document.getElementById('empresa-nome').textContent = data.nome;
             
             // Atualizar textos com o modo atual
             updateModeTexts();
@@ -2693,7 +2692,6 @@
                 btn.classList.toggle('active', btn.dataset.modo === modo);
             });
             updateModeTexts();
-            // O recarregamento dos dados é feito manualmente pelo botão "Filtrar".
         }
 
         // ── Atualizar textos dinâmicos de forma segura ──
@@ -2704,11 +2702,17 @@
                 console.warn("Empresa não encontrada ao atualizar textos.");
                 return;
             }
-            const nomeEmpresa = empData.nome;
-            const suffix = nomeEmpresa.includes('·') ? nomeEmpresa.split('·')[1].trim() : nomeEmpresa;
-            const newSub = modoTexto + ' · ' + suffix;
-            document.querySelectorAll('#sub-a, #sub-b').forEach(el => el.textContent = newSub);
-            document.getElementById('empresa-nome').textContent = nomeEmpresa;
+            
+            // Extrair o sufixo do nome da empresa (Ex: "Andrade", "Meta", "Mafrios")
+            const nomeEmpresaCompleto = empData.nome;
+            const sufixo = nomeEmpresaCompleto.split(' ').slice(1).join(' ') || nomeEmpresaCompleto;
+
+            // Textos dinâmicos
+            const nomePainel = `${modoTexto} ${sufixo}`; // Ex: "Intralogística Andrade"
+            const nomeSub = `${modoTexto} · ${modoTexto} ${sufixo}`; // Ex: "Intralogística · Intralogística Andrade"
+
+            document.getElementById('empresa-nome').textContent = nomePainel;
+            document.querySelectorAll('#sub-a, #sub-b').forEach(el => el.textContent = nomeSub);
             
             // Atualizar painel de motoristas/separadores
             document.getElementById('f-motor-label').textContent = getNomeColuna();
