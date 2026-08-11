@@ -2532,29 +2532,18 @@
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
 
-        // Mapeamento das colunas com base na imagem (índice 0 = Coluna A, 1 = Coluna B)
+        // Mapeamento das colunas
         const CF = {
             DATA: 1,       // B
             CODIGO: 2,     // C
             DESCRICAO: 3,  // D
             QTD: 4,        // E
-            VALOR: 8,      // I (VL (R$))
+            VALOR: 8,      // I (VALOR TOTAL)
             CARGA: 9,      // J (Nº CARGA)
             MOTIVO: 7,     // H (MOTIVO)
             MOTORISTA: 10, // K (MOTORISTA)
             RESP: 14,      // O (RESPONSÁVEL)
             TRATATIVA: 13  // N (TRATATIVA)
-        };
-        // O mesmo mapeamento serve para Sobras, pois estão na mesma linha
-        const CS = {
-            DATA: 1,
-            CODIGO: 2,
-            DESCRICAO: 3,
-            QTD: 4,
-            VALOR: 8,
-            CARGA: 9,
-            MOTORISTA: 10,
-            MOTIVO: 7
         };
 
         // ── Funções de utilidade ──
@@ -2787,7 +2776,6 @@
             let contFalta = 0, contAvaria = 0, contSobra = 0, contDiverg = 0;
 
             for (const row of rows) {
-                // Extrair dados usando os índices definidos em CF/CS
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
                 const motorista = String(row[CF.MOTORISTA] ?? '').trim();
@@ -2800,19 +2788,19 @@
                 const resp = String(row[CF.RESP] ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                 const tratativa = String(row[CF.TRATATIVA] ?? '').trim();
 
-                // Ignorar linhas sem carga e sem motivo (consideradas vazias)
                 if (!carga && !data && !motivo) continue;
 
                 const key = carga || ('_fa_' + dateKey(data));
                 const g = getOrCreate(map, key, data, carga, motorista);
                 const item = { codigo, descricao, qtd, valor, tratativa, data };
 
+                // CORREÇÃO DA LÓGICA DE PROCESSAMENTO
                 if (motivo === 'FALTA') {
                     contFalta++;
-                    if (resp === respNorm) {
-                        g.faltas.push(item);
-                        g.valFalta += valor;
-                    } else if (resp === divergNorm) {
+                    g.faltas.push(item);
+                    g.valFalta += valor;
+                    // Se for uma divergência, também adicionamos no array de divergências (sem remover das faltas)
+                    if (resp === divergNorm) {
                         contDiverg++;
                         g.divergencias.push(item);
                     }
