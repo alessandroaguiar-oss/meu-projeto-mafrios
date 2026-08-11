@@ -2043,7 +2043,7 @@
             color: #38d8c0;
         }
         /* Botão seletor de empresa estilo validação elegante */
-        .empresa-selector {
+        .empresa-selector, .modo-selector {
             display: inline-flex;
             align-items: center;
             background: rgba(255, 255, 255, .1);
@@ -2051,9 +2051,8 @@
             border-radius: 8px;
             padding: 4px;
             gap: 4px;
-            margin-right: 10px;
         }
-        .empresa-selector .empresa-btn {
+        .empresa-selector .empresa-btn, .modo-selector .empresa-btn {
             font-family: var(--mono);
             font-size: 11px;
             font-weight: 600;
@@ -2067,11 +2066,11 @@
             cursor: pointer;
             transition: all .2s;
         }
-        .empresa-selector .empresa-btn:hover {
+        .empresa-selector .empresa-btn:hover, .modo-selector .empresa-btn:hover {
             color: #fff;
             background: rgba(255, 255, 255, .1);
         }
-        .empresa-selector .empresa-btn.active {
+        .empresa-selector .empresa-btn.active, .modo-selector .empresa-btn.active {
             background: #38d8c0;
             color: #0a1e2e;
             box-shadow: 0 0 12px rgba(56, 216, 192, .3);
@@ -2160,7 +2159,7 @@
         </div>
     </div>
 
-    <!-- ══ CONFIG BAR COM SELETOR DE EMPRESA ══ -->
+    <!-- ══ CONFIG BAR COM SELETOR DE EMPRESA E MODO ══ -->
     <div class="config-bar">
         <div class="fg" style="flex:2;min-width:240px;">
             <label>API Key &nbsp;<span class="lbl-ok">● Configurada</span></label>
@@ -2177,6 +2176,14 @@
                 <button class="empresa-btn active" data-empresa="andrade">Andrade</button>
                 <button class="empresa-btn" data-empresa="meta">Meta</button>
                 <button class="empresa-btn" data-empresa="mafrios">Mafrios</button>
+            </div>
+        </div>
+        <!-- Seletor de modo (INTRALOGÍSTICA / TRANSPORTE) -->
+        <div class="fg" style="border-left:1px solid rgba(255,255,255,.12); padding-left:16px; margin-left:4px;">
+            <label>Modo</label>
+            <div class="modo-selector" id="modo-selector">
+                <button class="empresa-btn active" data-modo="transporte">TRANSPORTE</button>
+                <button class="empresa-btn" data-modo="intralogistica">INTRALOGÍSTICA</button>
             </div>
         </div>
     </div>
@@ -2218,7 +2225,7 @@
             <input type="text" id="f-carga" placeholder="Ex: 0042" style="min-width:100px;">
         </div>
         <div class="fg motor-combo" id="motor-combo-wrap">
-            <label>Motorista</label>
+            <label id="f-motor-label">Motorista</label>
             <input type="text" id="f-motor" placeholder="Nome ou selecione…" style="min-width:180px;" autocomplete="off" oninput="filterMotorDropdown()" onfocus="openMotorDropdown()" onblur="closeMotorDropdownDelay()">
             <span class="motor-combo-arrow">▾</span>
             <div class="motor-dropdown" id="motor-dropdown"></div>
@@ -2275,12 +2282,12 @@
     <!-- ══ RANKING ══ -->
     <div id="ranking-section" class="hidden">
         <div class="sec-hd" style="margin-top:0; border-radius:0;">
-            <span class="sec-hd-label">Ranking Top 5 Motoristas</span>
+            <span class="sec-hd-label">Ranking Top 5</span>
             <div class="sec-hd-line"></div>
         </div>
         <div id="ranking-section-inner" style="padding:16px 40px 12px;">
             <div class="ranking-header">
-                <span class="ranking-title">🏆 Selecione o tipo:</span>
+                <span class="ranking-title" id="rank-title-sel">🏆 Selecione o tipo:</span>
                 <div class="rank-tabs">
                     <button class="rank-tab active-f" onclick="setRankTipo('f',this)">🔻 Faltas</button>
                     <button class="rank-tab" onclick="setRankTipo('a',this)">⚠️ Avarias</button>
@@ -2324,7 +2331,7 @@
                     <th class="col-expand"></th>
                     <th>Data</th>
                     <th>Carga</th>
-                    <th>Motorista</th>
+                    <th id="th-nome-coluna">Motorista</th>
                     <th>Faltas (R$)</th>
                     <th>Avarias (R$)</th>
                     <th>Sobras (R$)</th>
@@ -2337,16 +2344,16 @@
 
     <div id="toast"></div>
 
-    <!-- ══ MOTORISTAS PANEL ══ -->
+    <!-- ══ MOTORISTAS/SEPARADORES PANEL ══ -->
     <div id="motoristas-panel" style="display:none; position:fixed; inset:0; z-index:500; background:rgba(7,22,36,.92); backdrop-filter:blur(4px); overflow-y:auto; padding:32px 24px;">
         <div style="max-width:860px; margin:0 auto;">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
                 <div>
-                    <div style="font-family:var(--cond); font-size:18px; font-weight:800; color:#fff; letter-spacing:.06em; text-transform:uppercase;">👥 Resumo por Motorista</div>
+                    <div style="font-family:var(--cond); font-size:18px; font-weight:800; color:#fff; letter-spacing:.06em; text-transform:uppercase;" id="mot-panel-title">👥 Resumo por Motorista</div>
                     <div style="font-family:var(--mono); font-size:10px; color:rgba(255,255,255,.4); letter-spacing:.08em; margin-top:3px;" id="mot-panel-period"></div>
                 </div>
                 <div style="display:flex; gap:10px; align-items:center;">
-                    <button onclick="printMotoristasTable()" title="Imprimir tabela de Motoristas" style="display:inline-flex; align-items:center; gap:6px; background:rgba(14,122,191,.15); border:1px solid rgba(14,122,191,.4); color:#38d8c0; border-radius:8px; padding:8px 16px; cursor:pointer; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; transition:all .15s;" onmouseover="this.style.background='rgba(14,122,191,.3)'" onmouseout="this.style.background='rgba(14,122,191,.15)'">🖨 Imprimir</button>
+                    <button onclick="printMotoristasTable()" title="Imprimir tabela" style="display:inline-flex; align-items:center; gap:6px; background:rgba(14,122,191,.15); border:1px solid rgba(14,122,191,.4); color:#38d8c0; border-radius:8px; padding:8px 16px; cursor:pointer; font-family:var(--mono); font-size:10px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; transition:all .15s;" onmouseover="this.style.background='rgba(14,122,191,.3)'" onmouseout="this.style.background='rgba(14,122,191,.15)'">🖨 Imprimir</button>
                     <button onclick="closeMotoristasPanel()" style="background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); color:rgba(255,255,255,.7); border-radius:8px; padding:8px 18px; cursor:pointer; font-family:var(--mono); font-size:11px; transition:all .15s;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">✕ Fechar</button>
                 </div>
             </div>
@@ -2354,7 +2361,7 @@
                 <table id="mot-table" style="width:100%; border-collapse:collapse;">
                     <thead>
                         <tr>
-                            <th onclick="sortMotTable('name')" id="mot-th-name" class="mot-th mot-th-name">Motorista <span class="mot-sort-icon">↕</span></th>
+                            <th onclick="sortMotTable('name')" id="mot-th-name" class="mot-th mot-th-name" id="mot-th-name-label">Nome <span class="mot-sort-icon">↕</span></th>
                             <th onclick="sortMotTable('falta')" id="mot-th-falta" class="mot-th mot-th-val">Faltas (R$) <span class="mot-sort-icon">↕</span></th>
                             <th onclick="sortMotTable('avaria')" id="mot-th-avaria" class="mot-th mot-th-val">Avarias (R$) <span class="mot-sort-icon">↕</span></th>
                             <th onclick="sortMotTable('sobra')" id="mot-th-sobra" class="mot-th mot-th-val">Sobras (R$) <span class="mot-sort-icon">↕</span></th>
@@ -2389,7 +2396,7 @@
                         <button onclick="printBaixaTable('falta')" title="Imprimir tabela de Faltas" style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; background:rgba(224,48,80,.15); border:1px solid rgba(224,48,80,.35); color:#e06070; border-radius:6px; padding:4px 10px; cursor:pointer; font-family:var(--mono); font-size:9px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; transition:all .15s;" onmouseover="this.style.background='rgba(224,48,80,.3)'" onmouseout="this.style.background='rgba(224,48,80,.15)'">🖨 Imprimir</button>
                     </div>
                     <div style="font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:rgba(224,96,112,.6); margin-bottom:10px; padding:4px 8px; background:rgba(224,48,80,.08); border-left:2px solid rgba(224,48,80,.3); border-radius:0 4px 4px 0;">
-                        ↳ Baixa direcionada ao CC do Transporte
+                        ↳ Baixa direcionada ao CC do <span id="baixa-label-cc-falta">Transporte</span>
                     </div>
                     <div style="background:#0d2a40; border:1px solid rgba(224,48,80,.2); border-radius:10px; overflow:hidden;">
                         <table style="width:100%; border-collapse:collapse;">
@@ -2411,7 +2418,7 @@
                         <button onclick="printBaixaTable('avaria')" title="Imprimir tabela de Avarias" style="margin-left:auto; display:inline-flex; align-items:center; gap:5px; background:rgba(224,120,32,.15); border:1px solid rgba(224,120,32,.35); color:#e0a060; border-radius:6px; padding:4px 10px; cursor:pointer; font-family:var(--mono); font-size:9px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; transition:all .15s;" onmouseover="this.style.background='rgba(224,120,32,.3)'" onmouseout="this.style.background='rgba(224,120,32,.15)'">🖨 Imprimir</button>
                     </div>
                     <div style="font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.08em; color:rgba(224,160,96,.6); margin-bottom:10px; padding:4px 8px; background:rgba(224,120,32,.08); border-left:2px solid rgba(224,120,32,.3); border-radius:0 4px 4px 0;">
-                        ↳ Baixa direcionada ao CC do Transporte
+                        ↳ Baixa direcionada ao CC do <span id="baixa-label-cc-avaria">Transporte</span>
                     </div>
                     <div style="background:#0d2a40; border:1px solid rgba(224,120,32,.2); border-radius:10px; overflow:hidden;">
                         <table style="width:100%; border-collapse:collapse;">
@@ -2513,6 +2520,7 @@
 
         // Estado atual
         let currentEmpresa = 'andrade';
+        let currentMode = 'transporte'; // 'transporte' ou 'intralogistica'
         let allRows = [],
             filtered = [];
         let editUnlocked = false;
@@ -2540,7 +2548,7 @@
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
         const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, MOTORISTA: 9, RESP: 11,
-            TRATATIVA: 12 };
+            TRATATIVA: 12, SEPARADOR: 14 };
         const CS = { CODIGO: 0, DESCRICAO: 1, QTD: 3, CARGA: 5, MOTORISTA: 7, DATA: 8, VALOR: 13 };
 
         // ── Funções de utilidade ──
@@ -2627,16 +2635,32 @@
             return { min: toISO(ini), max: toISO(fim), labelIni: toBR(ini), labelFim: toBR(fim) };
         }
 
+        function getModoTexto() {
+            return currentMode === 'transporte' ? 'Transporte' : 'Intralogística';
+        }
+        function getModoTextoLower() {
+            return currentMode === 'transporte' ? 'transporte' : 'intralogística';
+        }
+        function getNomeColuna() {
+            return currentMode === 'transporte' ? 'Motorista' : 'Separador';
+        }
+        function getNomeColunaLower() {
+            return currentMode === 'transporte' ? 'motorista' : 'separador';
+        }
+        function getFiltroResp() {
+            return currentMode === 'transporte' ? FALTA_RESP_FILTRO : 'ERRO DE SEPARACAO';
+        }
+        function getColunaNome() {
+            return currentMode === 'transporte' ? CF.MOTORISTA : CF.SEPARADOR;
+        }
+
         // ── Troca de empresa ──
         function setEmpresa(emp) {
             if (emp === currentEmpresa) return;
             currentEmpresa = emp;
             const data = EMPRESAS[emp];
 
-            // Atualizar classes de tema
             document.body.className = data.theme;
-
-            // Atualizar CSS customizado
             const root = document.documentElement.style;
             root.setProperty('--hero-bg', data.css.heroBg);
             root.setProperty('--hero-bg2', data.css.heroBg2);
@@ -2644,26 +2668,48 @@
             root.setProperty('--truck-filter', data.css.truckFilter);
             root.setProperty('--text-color', data.css.textColor);
 
-            // Atualizar imagens (placeholders)
             document.getElementById('logo-img').src = data.logo || '';
             document.getElementById('truck-img').src = data.truck || '';
-
-            // Atualizar textos
             document.getElementById('empresa-nome').textContent = data.nome;
             document.querySelectorAll('#sub-a, #sub-b').forEach(el => el.textContent = data.sub);
 
-            // Atualizar botões
             document.querySelectorAll('.empresa-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.empresa === emp);
             });
 
-            // Recarregar dados
             if (allRows.length > 0 || document.getElementById('summary').style.display !== 'none') {
                 loadData();
             }
         }
 
-        // ── Eventos do seletor ──
+        // ── Troca de modo ──
+        function setModo(modo) {
+            if (modo === currentMode) return;
+            currentMode = modo;
+            document.querySelectorAll('#modo-selector .empresa-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.modo === modo);
+            });
+            // Atualizar textos dinâmicos
+            document.getElementById('f-motor-label').textContent = getNomeColuna();
+            document.getElementById('th-nome-coluna').textContent = getNomeColuna();
+            
+            const panelTitle = document.getElementById('mot-panel-title');
+            if (currentMode === 'transporte') {
+                panelTitle.innerHTML = '👥 Resumo por Motorista';
+                document.getElementById('mot-th-name-label').textContent = 'Motorista';
+                document.querySelectorAll('#baixa-label-cc-falta, #baixa-label-cc-avaria').forEach(el => el.textContent = 'Transporte');
+            } else {
+                panelTitle.innerHTML = '👥 Resumo por Separador';
+                document.getElementById('mot-th-name-label').textContent = 'Separador';
+                document.querySelectorAll('#baixa-label-cc-falta, #baixa-label-cc-avaria').forEach(el => el.textContent = 'Intralogística');
+            }
+            
+            if (allRows.length > 0 || document.getElementById('summary').style.display !== 'none') {
+                loadData();
+            }
+        }
+
+        // ── Eventos ──
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('api-key').value = '*** protegida ***';
             document.getElementById('range-input').value = 'CONSULTA B6:O | SOBRA D3:Q';
@@ -2676,14 +2722,14 @@
             document.getElementById('lbl-di').textContent = '● ' + range.labelIni;
             document.getElementById('lbl-df').textContent = '● ' + range.labelFim;
 
-            // Inicializar com Andrade
             setEmpresa('andrade');
+            setModo('transporte');
 
-            // Eventos dos botões de empresa
             document.querySelectorAll('.empresa-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    setEmpresa(this.dataset.empresa);
-                });
+                btn.addEventListener('click', function() { setEmpresa(this.dataset.empresa); });
+            });
+            document.querySelectorAll('#modo-selector .empresa-btn').forEach(btn => {
+                btn.addEventListener('click', function() { setModo(this.dataset.modo); });
             });
         });
 
@@ -2770,13 +2816,14 @@
 
         function processRows(rowsFA, rowsS) {
             const map = new Map();
-            const respNorm = FALTA_RESP_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const respNorm = getFiltroResp().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+            const colNome = getColunaNome();
 
             for (const row of rowsFA) {
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
-                const motorista = String(row[CF.MOTORISTA] ?? '').trim();
+                const motorista = String(row[colNome] ?? '').trim();
                 const motivo = normMotivo(row[CF.MOTIVO]);
                 const valor = parseNum(row[CF.VALOR]);
                 const codigo = String(row[CF.CODIGO] ?? '').trim() || '–';
@@ -2938,6 +2985,7 @@
             if (!filtered.length) return;
             const grid = document.getElementById('ranking-grid');
             const cardTipo = document.getElementById('f-tipo').value;
+            const nomeColuna = getNomeColuna();
 
             if (cardTipo) {
                 const map = { 'FALTA': 'f', 'AVARIA': 'a', 'SOBRA': 's' };
@@ -3504,7 +3552,7 @@
             if (mot) {
                 document.getElementById('ranking-grid').innerHTML =
                     `<p style="color:var(--muted);font-family:var(--mono);font-size:12px;padding:10px 0;letter-spacing:.04em;">
-                    ⚠ Ranking indisponível, seleção de motorista ativa.
+                    ⚠ Ranking indisponível, seleção de ${getNomeColunaLower()} ativa.
                   </p>`;
             } else {
                 renderRanking();
@@ -3600,7 +3648,7 @@
             document.getElementById('baixa-diverg-tbody').innerHTML = renderRows(diverges, '#a78bfa');
         }
 
-        // ── Motoristas Panel ──
+        // ── Motoristas/Separadores Panel ──
         function openMotoristasPanel() {
             buildMotoristasTable();
             document.getElementById('motoristas-panel').style.display = '';
@@ -3627,9 +3675,9 @@
             const df = document.getElementById('f-df').value;
             const fmt = v => v ? new Date(v + 'T12:00:00').toLocaleDateString('pt-BR') : '–';
             document.getElementById('mot-panel-period').textContent =
-                `Período: ${fmt(di)} a ${fmt(df)} · ${rows.length} motorista${rows.length!==1?'s':''}`;
+                `Período: ${fmt(di)} a ${fmt(df)} · ${rows.length} ${getNomeColunaLower()}${rows.length!==1?'s':''}`;
             document.getElementById('mot-total-count').textContent =
-                `${rows.length} motorista${rows.length!==1?'s':''}`;
+                `${rows.length} ${getNomeColunaLower()}${rows.length!==1?'s':''}`;
 
             const showF = !cardTipo || cardTipo === 'FALTA';
             const showA = !cardTipo || cardTipo === 'AVARIA';
@@ -3697,6 +3745,7 @@
             const showS = document.getElementById('mot-th-sobra').style.display !== 'none';
             const periodo = document.getElementById('mot-panel-period').textContent;
             const tbodyHtml = document.getElementById('mot-tbody').innerHTML;
+            const nomeColuna = getNomeColuna();
             const thFalta = showF ? '<th style="text-align:right;">Faltas (R$)</th>' : '';
             const thAvaria = showA ? '<th style="text-align:right;">Avarias (R$)</th>' : '';
             const thSobra = showS ? '<th style="text-align:right;">Sobras (R$)</th>' : '';
@@ -3704,7 +3753,7 @@
           <html lang="pt-BR">
           <head>
             <meta charset="UTF-8">
-            <title>Motoristas – Resumo</title>
+            <title>${nomeColuna}s – Resumo</title>
             <style>
               @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Barlow+Condensed:wght@700;800&family=DM+Mono:wght@400;500&display=swap');
               * { margin:0; padding:0; box-sizing:border-box; }
@@ -3733,14 +3782,14 @@
           </head>
           <body>
             <div class="header">
-              <div class="empresa">🚛 ${EMPRESAS[currentEmpresa].nome}</div>
-              <div class="titulo">👥 Resumo por Motorista</div>
+              <div class="empresa">🚛 ${EMPRESAS[currentEmpresa].nome} · ${getModoTexto()}</div>
+              <div class="titulo">👥 Resumo por ${nomeColuna}</div>
               <div class="periodo">${periodo}</div>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Motorista</th>
+                  <th>${nomeColuna}</th>
                   ${thFalta}
                   ${thAvaria}
                   ${thSobra}
@@ -3759,9 +3808,9 @@
 
         function printBaixaTable(tipo) {
             const cfg = {
-                falta: { tbodyId: 'baixa-falta-tbody', titulo: 'Faltas', subtitulo: 'Baixa direcionada ao CC do Transporte',
+                falta: { tbodyId: 'baixa-falta-tbody', titulo: 'Faltas', subtitulo: `Baixa direcionada ao CC do ${getModoTexto()}`,
                     cor: '#c02040', bordaCor: '#e03050' },
-                avaria: { tbodyId: 'baixa-avaria-tbody', titulo: 'Avarias', subtitulo: 'Baixa direcionada ao CC do Transporte',
+                avaria: { tbodyId: 'baixa-avaria-tbody', titulo: 'Avarias', subtitulo: `Baixa direcionada ao CC do ${getModoTexto()}`,
                     cor: '#b05010', bordaCor: '#e07820' },
                 diverg: { tbodyId: 'baixa-diverg-tbody',
                     titulo: 'Resultado Fora do Índice de Divergência', subtitulo: 'Baixa direcionada ao CC da Logística',
@@ -3801,7 +3850,7 @@
           </head>
           <body>
             <div class="header">
-              <div class="empresa">🚛 ${EMPRESAS[currentEmpresa].nome}</div>
+              <div class="empresa">🚛 ${EMPRESAS[currentEmpresa].nome} · ${getModoTexto()}</div>
               <div class="titulo">${cfg.titulo}</div>
               <div class="subtitulo">${cfg.subtitulo}</div>
               <div class="periodo">${periodo}</div>
