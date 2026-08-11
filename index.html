@@ -2042,7 +2042,7 @@
             border-color: #38d8c0;
             color: #38d8c0;
         }
-        /* Botão seletor de empresa estilo validação elegante */
+        /* Botão seletor de empresa e modo */
         .empresa-selector, .modo-selector {
             display: inline-flex;
             align-items: center;
@@ -2082,7 +2082,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Grupo Andrade</div>
+                <div class="login-title">🚛 Transporte Unificado</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2676,16 +2676,13 @@
             document.getElementById('logo-img').src = data.logo || '';
             document.getElementById('truck-img').src = data.truck || '';
             document.getElementById('empresa-nome').textContent = data.nome;
-            document.querySelectorAll('#sub-a, #sub-b').forEach(el => {
-                const suffix = data.nome.includes('·') ? data.nome.split('·')[1].trim() : data.nome;
-                el.textContent = getModoTexto() + ' · ' + suffix;
-            });
+            
+            // Atualizar textos com o modo atual
+            updateModeTexts();
 
             document.querySelectorAll('.empresa-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.empresa === emp);
             });
-
-            // NOTA: NÃO recarregamos dados automaticamente aqui. O usuário deve clicar em "Filtrar".
         }
 
         // ── Troca de modo ──
@@ -2696,19 +2693,24 @@
                 btn.classList.toggle('active', btn.dataset.modo === modo);
             });
             updateModeTexts();
-            // NOTA: NÃO recarregamos dados automaticamente aqui. O usuário deve clicar em "Filtrar".
+            // O recarregamento dos dados é feito manualmente pelo botão "Filtrar".
         }
 
-        // ── Atualizar textos dinâmicos ──
+        // ── Atualizar textos dinâmicos de forma segura ──
         function updateModeTexts() {
             const modoTexto = getModoTexto();
-            const nomeEmpresa = EMPRESAS[currentEmpresa].nome;
+            const empData = EMPRESAS[currentEmpresa];
+            if (!empData) {
+                console.warn("Empresa não encontrada ao atualizar textos.");
+                return;
+            }
+            const nomeEmpresa = empData.nome;
             const suffix = nomeEmpresa.includes('·') ? nomeEmpresa.split('·')[1].trim() : nomeEmpresa;
             const newSub = modoTexto + ' · ' + suffix;
             document.querySelectorAll('#sub-a, #sub-b').forEach(el => el.textContent = newSub);
             document.getElementById('empresa-nome').textContent = nomeEmpresa;
             
-            // Atualizar painel de motoristas
+            // Atualizar painel de motoristas/separadores
             document.getElementById('f-motor-label').textContent = getNomeColuna();
             document.getElementById('th-nome-coluna').textContent = getNomeColuna();
 
@@ -4003,7 +4005,6 @@
                     if (subEl) subEl.textContent = bemVindo;
                 });
                 document.getElementById('greeting-bar').style.display = '';
-                // NOTA: Não chamamos loadData() automaticamente ao logar, aguardando "Filtrar".
             } else {
                 const pwdEl = document.getElementById('login-pwd-field');
                 pwdEl.classList.add('error');
