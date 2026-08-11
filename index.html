@@ -2657,9 +2657,14 @@
         // ── Troca de empresa ──
         function setEmpresa(emp) {
             if (emp === currentEmpresa) return;
-            currentEmpresa = emp;
             const data = EMPRESAS[emp];
-
+            if (!data) {
+                console.error(`Empresa "${emp}" não encontrada.`);
+                toast('Erro: Empresa inválida.', 'err');
+                return;
+            }
+            currentEmpresa = emp;
+            
             document.body.className = data.theme;
             const root = document.documentElement.style;
             root.setProperty('--hero-bg', data.css.heroBg);
@@ -2754,6 +2759,14 @@
             document.getElementById('section-table').style.display = 'none';
 
             const emp = EMPRESAS[currentEmpresa];
+            if (!emp) {
+                toast('Erro: Empresa não configurada. Selecione uma empresa válida.', 'err');
+                document.getElementById('state-area').innerHTML =
+                    `<div class="state"><div class="state-icon">⚠️</div><h3>Erro de configuração</h3><p>A empresa selecionada não está configurada. Verifique.</p></div>`;
+                document.getElementById('btn-load').disabled = false;
+                return;
+            }
+
             try {
                 const [rowsFA, rowsS] = await Promise.all([
                     fetchSheet(emp.sheet_consulta, emp.range_consulta),
