@@ -2042,6 +2042,7 @@
             border-color: #38d8c0;
             color: #38d8c0;
         }
+        /* Botão seletor de empresa estilo validação elegante */
         .empresa-selector {
             display: inline-flex;
             align-items: center;
@@ -2167,8 +2168,9 @@
         </div>
         <div class="fg">
             <label>Intervalo &nbsp;<span class="lbl-ok">● Fixo</span></label>
-            <input type="text" id="range-input" value="CONSULTA B6:O" readonly style="min-width:80px;">
+            <input type="text" id="range-input" value="CONSULTA B6:O | SOBRA D3:Q" readonly style="min-width:80px;">
         </div>
+        <!-- Seletor de empresa -->
         <div class="fg" style="border-left:1px solid rgba(255,255,255,.12); padding-left:16px; margin-left:4px;">
             <label>Empresa</label>
             <div class="empresa-selector" id="empresa-selector">
@@ -2460,7 +2462,9 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA',
+                sheet_sobra: '🍁 CONSULTA SOBRA',
                 range_consulta: 'B6:P',
+                range_sobra: 'D3:Q',
                 css: {
                     heroBg: '#0d2a40',
                     heroBg2: '#0a1e2e',
@@ -2476,7 +2480,9 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA META',
+                sheet_sobra: 'CONSULTA SOBRA META',
                 range_consulta: 'B6:P',
+                range_sobra: 'D3:Q',
                 css: {
                     heroBg: '#022602',
                     heroBg2: '#0a1e2e',
@@ -2492,7 +2498,9 @@
                 logo: '',
                 truck: '',
                 sheet_consulta: 'CONSULTA MAFRIOS',
+                sheet_sobra: 'CONSULTA SOBRA MAFRIOS',
                 range_consulta: 'B6:P',
+                range_sobra: 'D3:Q',
                 css: {
                     heroBg: '#4d0000',
                     heroBg2: '#0a1e2e',
@@ -2531,21 +2539,9 @@
         const FALTA_DIVERG_FILTRO = 'RESULTADO FORA DO INDICE DE DIVERGENCIA';
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
-
-        // Mapeamento das colunas
-        const CF = {
-            DATA: 1,       // B
-            CODIGO: 2,     // C
-            DESCRICAO: 3,  // D
-            QTD: 4,        // E
-            VALOR: 8,      // I (VALOR TOTAL)
-            CARGA: 9,      // J (Nº CARGA)
-            MOTIVO: 7,     // H (MOTIVO)
-            MOTORISTA: 10, // K (MOTORISTA)
-            RESP: 14,      // O (RESPONSÁVEL)
-            TRATATIVA: 13, // N (TRATATIVA)
-            NF: 6          // G (Nº NF)
-        };
+        const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, MOTORISTA: 9, RESP: 11,
+            TRATATIVA: 12 };
+        const CS = { CODIGO: 0, DESCRICAO: 1, QTD: 3, CARGA: 5, MOTORISTA: 7, DATA: 8, VALOR: 13 };
 
         // ── Funções de utilidade ──
         function toast(msg, type = 'ok') {
@@ -2670,7 +2666,7 @@
         // ── Eventos do seletor ──
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('api-key').value = '*** protegida ***';
-            document.getElementById('range-input').value = 'CONSULTA B6:O';
+            document.getElementById('range-input').value = 'CONSULTA B6:O | SOBRA D3:Q';
 
             const range = calcDateRange();
             DATE_MIN = range.min;
@@ -2705,7 +2701,7 @@
             document.getElementById('btn-load').disabled = true;
             badge('Carregando…', 'loading');
             document.getElementById('state-area').innerHTML =
-                `<div class="state"><div class="spin"></div><h3>Buscando dados…</h3><p>Consultando a aba da planilha…</p></div>`;
+                `<div class="state"><div class="spin"></div><h3>Buscando dados…</h3><p>Consultando as abas da planilha…</p></div>`;
             document.getElementById('state-area').style.display = '';
             document.getElementById('main-table').style.display = 'none';
             document.getElementById('summary').style.display = 'none';
@@ -2713,19 +2709,21 @@
 
             const emp = EMPRESAS[currentEmpresa];
             try {
-                const rows = await fetchSheet(emp.sheet_consulta, emp.range_consulta);
-                console.log(`✓ ${currentEmpresa}: ${rows.length} linhas brutas carregadas.`);
-                
-                if (rows.length === 0) {
+                const [rowsFA, rowsS] = await Promise.all([
+                    fetchSheet(emp.sheet_consulta, emp.range_consulta),
+                    fetchSheet(emp.sheet_sobra, emp.range_sobra)
+                ]);
+                console.log(`✓ ${currentEmpresa}: FA ${rowsFA.length} linhas | S ${rowsS.length} linhas`);
+                if (rowsFA.length === 0) {
                     toast('⚠️ Aba CONSULTA vazia — verifique o intervalo de datas na planilha', 'err');
                     document.getElementById('state-area').innerHTML =
                         `<div class="state"><div class="state-icon">⚠️</div><h3>Sem dados</h3><p>A aba CONSULTA está vazia. Verifique o intervalo de datas configurado na planilha.</p></div>`;
                     document.getElementById('btn-load').disabled = false;
                     return;
                 }
-                processRows(rows);
+                processRows(rowsFA, rowsS);
                 badge('Atualizado', 'ok');
-                toast(`✓ ${rows.length} linhas processadas`);
+                toast(`✓ ${rowsFA.length} linhas FA + ${rowsS.length} linhas sobras`);
             } catch (e) {
                 const isQuota = e.message.toLowerCase().includes('quota') || e.message.toLowerCase().includes('rate');
                 badge('Erro', 'err');
@@ -2746,22 +2744,8 @@
         // ── Processamento ──
         function getOrCreate(map, key, data, carga, motorista) {
             if (!map.has(key)) {
-                map.set(key, {
-                    data,
-                    carga,
-                    motorista,
-                    faltas: [],
-                    avarias: [],
-                    sobras: [],
-                    divergencias: [],
-                    valFalta: 0,
-                    valAvaria: 0,
-                    valSobra: 0,
-                    // Novos campos para contagem de NF e Carga
-                    nfsFalta: new Set(),
-                    nfsAvaria: new Set(),
-                    cargasSobra: new Set()
-                });
+                map.set(key, { data, carga, motorista, faltas: [], avarias: [], sobras: [], divergencias: [], valFalta: 0,
+                    valAvaria: 0, valSobra: 0 });
             }
             const g = map.get(key);
             if (!g.motorista && motorista) g.motorista = motorista;
@@ -2784,71 +2768,62 @@
             return `${y}-${m}-${day}`;
         }
 
-        function processRows(rows) {
+        function processRows(rowsFA, rowsS) {
             const map = new Map();
             const respNorm = FALTA_RESP_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            let contFalta = 0, contAvaria = 0, contSobra = 0, contDiverg = 0;
 
-            for (const row of rows) {
+            for (const row of rowsFA) {
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
                 const motorista = String(row[CF.MOTORISTA] ?? '').trim();
-                const motivoRaw = String(row[CF.MOTIVO] ?? '').trim();
-                const motivo = normMotivo(motivoRaw);
+                const motivo = normMotivo(row[CF.MOTIVO]);
                 const valor = parseNum(row[CF.VALOR]);
                 const codigo = String(row[CF.CODIGO] ?? '').trim() || '–';
                 const descricao = String(row[CF.DESCRICAO] ?? '').trim() || '(sem descrição)';
                 const qtd = String(row[CF.QTD] ?? '').trim() || '–';
                 const resp = String(row[CF.RESP] ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                 const tratativa = String(row[CF.TRATATIVA] ?? '').trim();
-                const nf = String(row[CF.NF] ?? '').trim(); // Coluna G (NF)
-
                 if (!carga && !data && !motivo) continue;
-
                 const key = carga || ('_fa_' + dateKey(data));
                 const g = getOrCreate(map, key, data, carga, motorista);
-                const item = { codigo, descricao, qtd, valor, tratativa, data, nf };
-
-                // Contagem de Ocorrências
+                const item = { codigo, descricao, qtd, valor, tratativa, data };
                 if (motivo === 'FALTA') {
-                    contFalta++;
-                    g.faltas.push(item);
-                    g.valFalta += valor;
-                    if (nf && !g.nfsFalta.has(nf)) {
-                        g.nfsFalta.add(nf);
-                    }
-                    if (resp === divergNorm) {
-                        contDiverg++;
+                    if (resp === respNorm) {
+                        g.faltas.push(item);
+                        g.valFalta += valor;
+                    } else if (resp === divergNorm) {
                         g.divergencias.push(item);
                     }
                 } else if (motivo === 'AVARIA') {
-                    contAvaria++;
                     g.avarias.push(item);
                     g.valAvaria += valor;
-                    if (nf && !g.nfsAvaria.has(nf)) {
-                        g.nfsAvaria.add(nf);
-                    }
-                } else if (motivo === 'SOBRA') {
-                    contSobra++;
-                    g.sobras.push(item);
-                    g.valSobra += valor;
-                    if (carga && !g.cargasSobra.has(carga)) {
-                        g.cargasSobra.add(carga);
-                    }
                 }
             }
 
-            // Log detalhado no console para depuração
-            console.log(`📊 Contagem bruta: Faltas=${contFalta}, Avarias=${contAvaria}, Sobras=${contSobra}, Divergências=${contDiverg}`);
+            for (const row of rowsS) {
+                const data = String(row[CS.DATA] ?? '').trim();
+                const carga = String(row[CS.CARGA] ?? '').trim();
+                const motorista = String(row[CS.MOTORISTA] ?? '').trim();
+                const valor = parseNum(row[CS.VALOR]);
+                const codigo = String(row[CS.CODIGO] ?? '').trim() || '–';
+                const descricao = String(row[CS.DESCRICAO] ?? '').trim() || '(sem descrição)';
+                const qtd = String(row[CS.QTD] ?? '').trim() || '–';
+                if (!carga && !data) continue;
+                const key = carga || ('_s_' + dateKey(data));
+                const g = getOrCreate(map, key, data, carga, motorista);
+                const item = { codigo, descricao, qtd, valor, data };
+                g.sobras.push(item);
+                g.valSobra += valor;
+            }
 
             allRows = Array.from(map.values()).filter(r =>
                 r.faltas.length > 0 || r.avarias.length > 0 || r.sobras.length > 0
             );
             window._allRowsComDiverg = Array.from(map.values());
 
-            console.group('📊 Resultado final do processamento');
-            console.log('Carregamentos com ocorrências:', allRows.length);
+            console.group('📊 Resultado do processamento');
+            console.log('Carregamentos:', allRows.length);
             let tf = 0,
                 ta = 0,
                 ts = 0,
@@ -2856,16 +2831,16 @@
                 va = 0,
                 vs = 0;
             allRows.forEach(r => {
-                tf += r.nfsFalta.size;
+                tf += r.faltas.length;
                 vf += r.valFalta;
-                ta += r.nfsAvaria.size;
+                ta += r.avarias.length;
                 va += r.valAvaria;
-                ts += r.cargasSobra.size;
+                ts += r.sobras.length;
                 vs += r.valSobra;
             });
-            console.log(`Faltas (NFs): ${tf} | R$ ${vf.toFixed(2)}`);
-            console.log(`Avarias (NFs): ${ta} | R$ ${va.toFixed(2)}`);
-            console.log(`Sobras (Cargas): ${ts} | R$ ${vs.toFixed(2)}`);
+            console.log(`Faltas: ${tf} ocorr. | R$ ${vf.toFixed(2)}`);
+            console.log(`Avarias: ${ta} ocorr. | R$ ${va.toFixed(2)}`);
+            console.log(`Sobras: ${ts} ocorr. | R$ ${vs.toFixed(2)}`);
             console.groupEnd();
 
             filtered = [...allRows];
@@ -2979,19 +2954,12 @@
             const map = {};
             for (const r of filtered) {
                 const name = r.motorista || '(sem nome)';
-                if (!map[name]) map[name] = {
-                    faltas: 0,
-                    vFalta: 0,
-                    avarias: 0,
-                    vAvaria: 0,
-                    sobras: 0,
-                    vSobra: 0
-                };
-                map[name].faltas += r.nfsFalta.size;
+                if (!map[name]) map[name] = { faltas: 0, vFalta: 0, avarias: 0, vAvaria: 0, sobras: 0, vSobra: 0 };
+                map[name].faltas += r.faltas.length;
                 map[name].vFalta += r.valFalta;
-                map[name].avarias += r.nfsAvaria.size;
+                map[name].avarias += r.avarias.length;
                 map[name].vAvaria += r.valAvaria;
-                map[name].sobras += r.cargasSobra.size;
+                map[name].sobras += r.sobras.length;
                 map[name].vSobra += r.valSobra;
             }
 
@@ -3268,17 +3236,13 @@
                 const avarias = r.avarias.filter(itemInRange);
                 const sobras = r.sobras.filter(itemInRange);
                 const divergencias = (r.divergencias || []).filter(itemInRange);
-                // Recalcular valores e contagens com base nos itens filtrados
                 return Object.assign({}, r, {
                     faltas,
                     valFalta: faltas.reduce((s, i) => s + i.valor, 0),
-                    nfsFalta: new Set(faltas.map(i => i.nf).filter(Boolean)),
                     avarias,
                     valAvaria: avarias.reduce((s, i) => s + i.valor, 0),
-                    nfsAvaria: new Set(avarias.map(i => i.nf).filter(Boolean)),
                     sobras,
                     valSobra: sobras.reduce((s, i) => s + i.valor, 0),
-                    cargasSobra: new Set(sobras.map(i => i.carga).filter(Boolean)),
                     divergencias,
                 });
             }).filter(r => r.faltas.length > 0 || r.avarias.length > 0 || r.sobras.length > 0)
@@ -3289,9 +3253,9 @@
                 });
 
             filtered = base.filter(r => {
-                if (tipo === 'FALTA' && r.nfsFalta.size === 0) return false;
-                if (tipo === 'AVARIA' && r.nfsAvaria.size === 0) return false;
-                if (tipo === 'SOBRA' && r.cargasSobra.size === 0) return false;
+                if (tipo === 'FALTA' && r.faltas.length === 0) return false;
+                if (tipo === 'AVARIA' && r.avarias.length === 0) return false;
+                if (tipo === 'SOBRA' && r.sobras.length === 0) return false;
                 return true;
             });
 
@@ -3418,11 +3382,11 @@
                     vF = 0,
                     vA = 0,
                     vS = 0;
-                for (const r of base) { nF += r.nfsFalta.size;
+                for (const r of base) { nF += r.faltas.length;
                     vF += r.valFalta;
-                    nA += r.nfsAvaria.size;
+                    nA += r.avarias.length;
                     vA += r.valAvaria;
-                    nS += r.cargasSobra.size;
+                    nS += r.sobras.length;
                     vS += r.valSobra; }
                 document.getElementById('c-total').textContent = base.length;
                 document.getElementById('c-total-sub').textContent = base.length + (base.length === 1 ? ' carga' : ' cargas');
@@ -3442,11 +3406,11 @@
                 vA = 0,
                 vS = 0;
             for (const r of base) {
-                nF += r.nfsFalta.size;
+                nF += r.faltas.length;
                 vF += r.valFalta;
-                nA += r.nfsAvaria.size;
+                nA += r.avarias.length;
                 vA += r.valAvaria;
-                nS += r.cargasSobra.size;
+                nS += r.sobras.length;
                 vS += r.valSobra;
             }
             document.getElementById('c-total').textContent = base.length;
@@ -3488,17 +3452,17 @@
                 const showS = !tipo || tipo === 'SOBRA';
 
                 const chipF = showF ?
-                    (r.nfsFalta.size ?
+                    (r.faltas.length ?
                         `<span class="chip chip-f" onclick="event.stopPropagation();toggleTipo(${idx},'f')">− R$ ${fmtNum(r.valFalta)}</span>` :
                         `<span class="chip chip-0">–</span>`) :
                     '';
                 const chipA = showA ?
-                    (r.nfsAvaria.size ?
+                    (r.avarias.length ?
                         `<span class="chip chip-a" onclick="event.stopPropagation();toggleTipo(${idx},'a')">⚠ R$ ${fmtNum(r.valAvaria)}</span>` :
                         `<span class="chip chip-0">–</span>`) :
                     '';
                 const chipS = showS ?
-                    (r.cargasSobra.size ?
+                    (r.sobras.length ?
                         `<span class="chip chip-s" onclick="event.stopPropagation();toggleTipo(${idx},'s')">+ R$ ${fmtNum(r.valSobra)}</span>` :
                         `<span class="chip chip-0">–</span>`) :
                     '';
