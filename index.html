@@ -2082,7 +2082,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Unificado</div>
+                <div class="login-title">🚛 Transporte Grupo Andrade</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2676,15 +2676,16 @@
             document.getElementById('logo-img').src = data.logo || '';
             document.getElementById('truck-img').src = data.truck || '';
             document.getElementById('empresa-nome').textContent = data.nome;
-            document.querySelectorAll('#sub-a, #sub-b').forEach(el => el.textContent = data.sub);
+            document.querySelectorAll('#sub-a, #sub-b').forEach(el => {
+                const suffix = data.nome.includes('·') ? data.nome.split('·')[1].trim() : data.nome;
+                el.textContent = getModoTexto() + ' · ' + suffix;
+            });
 
             document.querySelectorAll('.empresa-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.empresa === emp);
             });
 
-            if (allRows.length > 0 || document.getElementById('summary').style.display !== 'none') {
-                loadData();
-            }
+            // NOTA: NÃO recarregamos dados automaticamente aqui. O usuário deve clicar em "Filtrar".
         }
 
         // ── Troca de modo ──
@@ -2694,10 +2695,23 @@
             document.querySelectorAll('#modo-selector .empresa-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.modo === modo);
             });
-            // Atualizar textos dinâmicos
+            updateModeTexts();
+            // NOTA: NÃO recarregamos dados automaticamente aqui. O usuário deve clicar em "Filtrar".
+        }
+
+        // ── Atualizar textos dinâmicos ──
+        function updateModeTexts() {
+            const modoTexto = getModoTexto();
+            const nomeEmpresa = EMPRESAS[currentEmpresa].nome;
+            const suffix = nomeEmpresa.includes('·') ? nomeEmpresa.split('·')[1].trim() : nomeEmpresa;
+            const newSub = modoTexto + ' · ' + suffix;
+            document.querySelectorAll('#sub-a, #sub-b').forEach(el => el.textContent = newSub);
+            document.getElementById('empresa-nome').textContent = nomeEmpresa;
+            
+            // Atualizar painel de motoristas
             document.getElementById('f-motor-label').textContent = getNomeColuna();
             document.getElementById('th-nome-coluna').textContent = getNomeColuna();
-            
+
             const panelTitle = document.getElementById('mot-panel-title');
             if (currentMode === 'transporte') {
                 panelTitle.innerHTML = '👥 Resumo por Motorista';
@@ -2707,10 +2721,6 @@
                 panelTitle.innerHTML = '👥 Resumo por Separador';
                 document.getElementById('mot-th-name-label').textContent = 'Separador';
                 document.querySelectorAll('#baixa-label-cc-falta, #baixa-label-cc-avaria').forEach(el => el.textContent = 'Intralogística');
-            }
-            
-            if (allRows.length > 0 || document.getElementById('summary').style.display !== 'none') {
-                loadData();
             }
         }
 
@@ -2848,6 +2858,7 @@
                 const key = carga || ('_fa_' + dateKey(data));
                 const g = getOrCreate(map, key, data, carga, motorista);
                 const item = { codigo, descricao, qtd, valor, tratativa, data };
+                
                 if (motivo === 'FALTA') {
                     if (resp === respNorm) {
                         g.faltas.push(item);
@@ -2856,15 +2867,21 @@
                         g.divergencias.push(item);
                     }
                 } else if (motivo === 'AVARIA') {
-                    g.avarias.push(item);
-                    g.valAvaria += valor;
+                    if (currentMode === 'transporte') { // Se intralogistica, ignora a avaria
+                        g.avarias.push(item);
+                        g.valAvaria += valor;
+                    }
                 } else if (motivo === 'SOBRA') {
-                    g.sobras.push(item);
-                    g.valSobra += valor;
+                    // Sobras da aba CONSULTA também dependem do status
+                    if (resp === respNorm) {
+                        g.sobras.push(item);
+                        g.valSobra += valor;
+                    }
                 }
             }
 
             for (const row of rowsS) {
+                // Processo rowsS (sobras da aba SOBRA) sem filtro de modo
                 const data = String(row[CS.DATA] ?? '').trim();
                 const carga = String(row[CS.CARGA] ?? '').trim();
                 const motorista = String(row[CS.MOTORISTA] ?? '').trim();
@@ -3986,7 +4003,7 @@
                     if (subEl) subEl.textContent = bemVindo;
                 });
                 document.getElementById('greeting-bar').style.display = '';
-                loadData();
+                // NOTA: Não chamamos loadData() automaticamente ao logar, aguardando "Filtrar".
             } else {
                 const pwdEl = document.getElementById('login-pwd-field');
                 pwdEl.classList.add('error');
