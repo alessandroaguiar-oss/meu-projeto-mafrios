@@ -2042,7 +2042,7 @@
             border-color: #38d8c0;
             color: #38d8c0;
         }
-        /* Botão seletor de empresa e modo */
+        /* Botão seletor de empresa e modo com classes segregadas */
         .empresa-selector, .modo-selector {
             display: inline-flex;
             align-items: center;
@@ -2052,7 +2052,7 @@
             padding: 4px;
             gap: 4px;
         }
-        .empresa-selector .empresa-btn, .modo-selector .empresa-btn {
+        .empresa-selector .empresa-btn, .modo-selector .modo-btn {
             font-family: var(--mono);
             font-size: 11px;
             font-weight: 600;
@@ -2066,11 +2066,11 @@
             cursor: pointer;
             transition: all .2s;
         }
-        .empresa-selector .empresa-btn:hover, .modo-selector .empresa-btn:hover {
+        .empresa-selector .empresa-btn:hover, .modo-selector .modo-btn:hover {
             color: #fff;
             background: rgba(255, 255, 255, .1);
         }
-        .empresa-selector .empresa-btn.active, .modo-selector .empresa-btn.active {
+        .empresa-selector .empresa-btn.active, .modo-selector .modo-btn.active {
             background: #38d8c0;
             color: #0a1e2e;
             box-shadow: 0 0 12px rgba(56, 216, 192, .3);
@@ -2178,12 +2178,12 @@
                 <button class="empresa-btn" data-empresa="mafrios">Mafrios</button>
             </div>
         </div>
-        <!-- Seletor de modo (INTRALOGÍSTICA / TRANSPORTE) -->
+        <!-- Seletor de modo (INTRALOGÍSTICA / TRANSPORTE) com classes separadas -->
         <div class="fg" style="border-left:1px solid rgba(255,255,255,.12); padding-left:16px; margin-left:4px;">
             <label>Modo</label>
             <div class="modo-selector" id="modo-selector">
-                <button class="empresa-btn active" data-modo="transporte">TRANSPORTE</button>
-                <button class="empresa-btn" data-modo="intralogistica">INTRALOGÍSTICA</button>
+                <button class="modo-btn active" data-modo="transporte">TRANSPORTE</button>
+                <button class="modo-btn" data-modo="intralogistica">INTRALOGÍSTICA</button>
             </div>
         </div>
     </div>
@@ -2570,11 +2570,18 @@
             if (!v && v !== 0) return null;
             const s = String(v).trim();
             let year, month, day;
+            
+            // Verifica se é um número serial do Excel (geralmente entre 30000 e 60000)
             if (/^\d{4,5}$/.test(s) && +s > 20000) {
-                const d = new Date(Date.UTC(1899, 11, 30) + +s * 86400000);
-                year = d.getUTCFullYear();
-                month = d.getUTCMonth();
-                day = d.getUTCDate();
+                const serial = Number(s);
+                // Aplica a correção do bug do ano bissexto de 1900
+                let correctedSerial = serial;
+                if (serial >= 60) correctedSerial = serial - 1;
+                // Converte o serial para data JS (epoch do Excel é 25569 dias antes de 1970)
+                const d = new Date((correctedSerial - 25569) * 86400 * 1000);
+                year = d.getFullYear();
+                month = d.getMonth();
+                day = d.getDate();
             } else if (/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.test(s)) {
                 const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
                 year = +m[3];
@@ -2679,7 +2686,7 @@
             // Atualizar textos com o modo atual
             updateModeTexts();
 
-            document.querySelectorAll('.empresa-btn').forEach(btn => {
+            document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.empresa === emp);
             });
         }
@@ -2688,7 +2695,7 @@
         function setModo(modo) {
             if (modo === currentMode) return;
             currentMode = modo;
-            document.querySelectorAll('#modo-selector .empresa-btn').forEach(btn => {
+            document.querySelectorAll('#modo-selector .modo-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.modo === modo);
             });
             updateModeTexts();
@@ -2698,6 +2705,7 @@
         function updateModeTexts() {
             const modoTexto = getModoTexto();
             const empData = EMPRESAS[currentEmpresa];
+            // Segurança: se a empresa não estiver definida, não tente atualizar
             if (!empData) {
                 console.warn("Empresa não encontrada ao atualizar textos.");
                 return;
@@ -2746,10 +2754,10 @@
             setEmpresa('andrade');
             setModo('transporte');
 
-            document.querySelectorAll('.empresa-btn').forEach(btn => {
+            document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
                 btn.addEventListener('click', function() { setEmpresa(this.dataset.empresa); });
             });
-            document.querySelectorAll('#modo-selector .empresa-btn').forEach(btn => {
+            document.querySelectorAll('#modo-selector .modo-btn').forEach(btn => {
                 btn.addEventListener('click', function() { setModo(this.dataset.modo); });
             });
         });
