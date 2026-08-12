@@ -2668,6 +2668,10 @@
             if (!data) {
                 console.error(`Empresa "${emp}" não encontrada.`);
                 toast('Erro: Empresa inválida.', 'err');
+                // Fallback: manter o botão anterior selecionado visualmente
+                document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.empresa === currentEmpresa);
+                });
                 return;
             }
             currentEmpresa = emp;
@@ -2844,7 +2848,7 @@
 
         function dateKey(rawDate) {
             const d = parseDate(rawDate);
-            if (!d) return '';
+            if (!d) return '1900-01-01'; // Data fallback caso inválida
             const y = d.getFullYear();
             const m = String(d.getMonth() + 1).padStart(2, '0');
             const day = String(d.getDate()).padStart(2, '0');
@@ -2869,7 +2873,10 @@
                 const resp = String(row[CF.RESP] ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                 const tratativa = String(row[CF.TRATATIVA] ?? '').trim();
                 if (!carga && !data && !motivo) continue;
-                const key = carga || ('_fa_' + dateKey(data));
+                
+                // CRITÉRIO PRINCIPAL: DATA | CARGA
+                const key = dateKey(data) + '|' + (carga || 'sem_carga');
+                
                 const g = getOrCreate(map, key, data, carga, motorista);
                 const item = { codigo, descricao, qtd, valor, tratativa, data };
                 
@@ -2904,7 +2911,10 @@
                 const descricao = String(row[CS.DESCRICAO] ?? '').trim() || '(sem descrição)';
                 const qtd = String(row[CS.QTD] ?? '').trim() || '–';
                 if (!carga && !data) continue;
-                const key = carga || ('_s_' + dateKey(data));
+                
+                // CRITÉRIO PRINCIPAL: DATA | CARGA
+                const key = dateKey(data) + '|' + (carga || 'sem_carga');
+                
                 const g = getOrCreate(map, key, data, carga, motorista);
                 const item = { codigo, descricao, qtd, valor, data };
                 g.sobras.push(item);
