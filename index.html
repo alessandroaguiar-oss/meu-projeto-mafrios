@@ -2670,7 +2670,11 @@
                 toast('Erro: Empresa inválida.', 'err');
                 // Fallback: manter o botão anterior selecionado visualmente
                 document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.empresa === currentEmpresa);
+                    if (btn.dataset.empresa === currentEmpresa) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
                 });
                 return;
             }
@@ -2691,7 +2695,11 @@
             updateModeTexts();
 
             document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.empresa === emp);
+                if (btn.dataset.empresa === emp) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
             });
         }
 
@@ -2700,7 +2708,11 @@
             if (modo === currentMode) return;
             currentMode = modo;
             document.querySelectorAll('#modo-selector .modo-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.modo === modo);
+                if (btn.dataset.modo === modo) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
             });
             updateModeTexts();
         }
@@ -2835,7 +2847,11 @@
                     valAvaria: 0, valSobra: 0 });
             }
             const g = map.get(key);
-            if (!g.motorista && motorista) g.motorista = motorista;
+            // Se o motorista/separador atual já estiver preenchido, mantemos o valor atual.
+            // Caso contrário, se o novo valor não estiver vazio, atualizamos.
+            if (motorista) {
+                g.motorista = motorista;
+            }
             if (data && g.data) {
                 const dNew = parseDate(data);
                 const dOld = parseDate(g.data);
