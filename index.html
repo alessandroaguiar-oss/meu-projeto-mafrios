@@ -2082,7 +2082,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Grupo Andrade</div>
+                <div class="login-title">🚛 Transporte Unificado</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2847,9 +2847,9 @@
                     valAvaria: 0, valSobra: 0 });
             }
             const g = map.get(key);
-            // Se o motorista/separador atual já estiver preenchido, mantemos o valor atual.
-            // Caso contrário, se o novo valor não estiver vazio, atualizamos.
-            if (motorista) {
+            // CORREÇÃO: Agora, se o nome do motorista/separador (mesmo que já tenha um valor antigo) 
+            // for uma string válida e não vazia, ele sempre sobrescreve.
+            if (motorista && motorista.trim() !== '') {
                 g.motorista = motorista;
             }
             if (data && g.data) {
@@ -3456,7 +3456,8 @@
         function buildDetailHTML(r, tipo) {
             let html = '<div class="detail-inner">';
             const colName = getNomeColuna();
-            if (r.motorista && r.motorista !== '(sem nome)') {
+            // Agora, mesmo que o nome tenha vindo preenchido de forma tardia, ele aparecerá aqui.
+            if (r.motorista && r.motorista.trim() !== '' && r.motorista !== '(sem nome)') {
                 html += `<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0 12px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:14px;display:flex;align-items:center;">
                             <span style="font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);">${colName}:</span>
                             <span style="color:#fff;margin-left:8px;font-family:var(--sans);">${r.motorista}</span>
