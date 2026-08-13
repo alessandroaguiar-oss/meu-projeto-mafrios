@@ -3455,6 +3455,13 @@
 
         function buildDetailHTML(r, tipo) {
             let html = '<div class="detail-inner">';
+            const colName = getNomeColuna();
+            if (r.motorista && r.motorista !== '(sem nome)') {
+                html += `<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0 12px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:14px;display:flex;align-items:center;">
+                            <span style="font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);">${colName}:</span>
+                            <span style="color:#fff;margin-left:8px;font-family:var(--sans);">${r.motorista}</span>
+                         </div>`;
+            }
             if (tipo === 'f' || tipo === 'all') html += buildSection(r.faltas, 'f', 'Falta', '🔻');
             if (tipo === 'a' || tipo === 'all') html += buildSection(r.avarias, 'a', 'Avaria', '⚠️');
             if (tipo === 's' || tipo === 'all') html += buildSection(r.sobras, 's', 'Sobra', '🔺');
