@@ -2547,8 +2547,9 @@
         const FALTA_DIVERG_FILTRO = 'RESULTADO FORA DO INDICE DE DIVERGENCIA';
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
-        const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, MOTORISTA: 9, RESP: 11,
-            TRATATIVA: 12, SEPARADOR: 14 };
+        // CORREÇÃO DE ÍNDICES ABA CONSULTA (B6:P)
+        // B:0, C:1, D:2, E:3, F:4, G:5, H:6, I:7, J:8, K:9, L:10, M:11, N:12, O:13, P:14
+        const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, RESP: 11, TRATATIVA: 12, SEPARADOR: 13 };
         const CS = { CODIGO: 0, DESCRICAO: 1, QTD: 3, CARGA: 5, MOTORISTA: 7, DATA: 8, VALOR: 13 };
 
         // ── Funções de utilidade ──
@@ -2658,7 +2659,8 @@
             return currentMode === 'transporte' ? FALTA_RESP_FILTRO : 'ERRO DE SEPARACAO';
         }
         function getColunaNome() {
-            return currentMode === 'transporte' ? CF.MOTORISTA : CF.SEPARADOR;
+            // Agora a coluna de nome é a "O" (índice 13) para ambos os modos
+            return CF.SEPARADOR; 
         }
 
         // ── Troca de empresa ──
@@ -2847,8 +2849,7 @@
                     valAvaria: 0, valSobra: 0 });
             }
             const g = map.get(key);
-            // CORREÇÃO: Agora, se o nome do motorista/separador (mesmo que já tenha um valor antigo) 
-            // for uma string válida e não vazia, ele sempre sobrescreve.
+            // Se o nome do responsável não for vazio, sobrescreve o nome do grupo (garantindo que o último válido prevaleça)
             if (motorista && motorista.trim() !== '') {
                 g.motorista = motorista;
             }
@@ -2875,18 +2876,20 @@
             const map = new Map();
             const respNorm = getFiltroResp().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const colNome = getColunaNome();
+            const colNome = getColunaNome(); // Agora sempre retorna a coluna O (índice 13)
 
             for (const row of rowsFA) {
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
-                const motorista = String(row[colNome] ?? '').trim();
+                const motorista = String(row[colNome] ?? '').trim(); // Puxa o nome da coluna O
                 const motivo = normMotivo(row[CF.MOTIVO]);
                 const valor = parseNum(row[CF.VALOR]);
                 const codigo = String(row[CF.CODIGO] ?? '').trim() || '–';
                 const descricao = String(row[CF.DESCRICAO] ?? '').trim() || '(sem descrição)';
                 const qtd = String(row[CF.QTD] ?? '').trim() || '–';
+                // Puxa o status da coluna M (índice 11)
                 const resp = String(row[CF.RESP] ?? '').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+                // Puxa a tratativa da coluna N (índice 12)
                 const tratativa = String(row[CF.TRATATIVA] ?? '').trim();
                 if (!carga && !data && !motivo) continue;
                 
@@ -2909,7 +2912,7 @@
                         g.valAvaria += valor;
                     }
                 } else if (motivo === 'SOBRA') {
-                    // Sobras da aba CONSULTA também dependem do status
+                    // Sobras da aba CONSULTA também dependem do status (Coluna M)
                     if (resp === respNorm) {
                         g.sobras.push(item);
                         g.valSobra += valor;
@@ -3456,7 +3459,6 @@
         function buildDetailHTML(r, tipo) {
             let html = '<div class="detail-inner">';
             const colName = getNomeColuna();
-            // Agora, mesmo que o nome tenha vindo preenchido de forma tardia, ele aparecerá aqui.
             if (r.motorista && r.motorista.trim() !== '' && r.motorista !== '(sem nome)') {
                 html += `<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0 12px;border-bottom:1px solid rgba(255,255,255,.15);margin-bottom:14px;display:flex;align-items:center;">
                             <span style="font-family:var(--cond);text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);">${colName}:</span>
