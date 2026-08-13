@@ -2082,7 +2082,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Grupo Andrade</div>
+                <div class="login-title">🚛 Transporte Unificado</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2547,9 +2547,22 @@
         const FALTA_DIVERG_FILTRO = 'RESULTADO FORA DO INDICE DE DIVERGENCIA';
         const EDIT_PASSWORD = '@Log147852@';
         const MASTER_PWD_HASH = '832288da41e0c5ff34c615b65fa0a08ca9e4a2fc833c82d9e3fabcdee6cb2840';
+        
         // CORREÇÃO DE ÍNDICES ABA CONSULTA (B6:P)
         // B:0, C:1, D:2, E:3, F:4, G:5, H:6, I:7, J:8, K:9, L:10, M:11, N:12, O:13, P:14
-        const CF = { DATA: 0, CODIGO: 1, DESCRICAO: 2, QTD: 3, VALOR: 7, CARGA: 8, MOTIVO: 6, RESP: 11, TRATATIVA: 12, SEPARADOR: 13 };
+        const CF = { 
+            DATA: 0, 
+            CODIGO: 1, 
+            DESCRICAO: 2, 
+            QTD: 3, 
+            VALOR: 7, 
+            CARGA: 8, 
+            MOTIVO: 6, 
+            RESP: 11, 
+            TRATATIVA: 12, 
+            MOTORISTA: 9,  // Coluna K (índice 9)
+            SEPARADOR: 13  // Coluna O (índice 13)
+        };
         const CS = { CODIGO: 0, DESCRICAO: 1, QTD: 3, CARGA: 5, MOTORISTA: 7, DATA: 8, VALOR: 13 };
 
         // ── Funções de utilidade ──
@@ -2658,26 +2671,28 @@
         function getFiltroResp() {
             return currentMode === 'transporte' ? FALTA_RESP_FILTRO : 'ERRO DE SEPARACAO';
         }
+        
+        // Função responsável por retornar o índice da coluna correta para extração do nome
         function getColunaNome() {
-            // Agora a coluna de nome é a "O" (índice 13) para ambos os modos
-            return CF.SEPARADOR; 
+            return currentMode === 'transporte' ? CF.MOTORISTA : CF.SEPARADOR;
         }
 
         // ── Troca de empresa ──
         function setEmpresa(emp) {
             if (emp === currentEmpresa) return;
+            
+            // Aplica a cor visual imediatamente, independentemente de erros de validação
+            document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.empresa === emp) {
+                    btn.classList.add('active');
+                }
+            });
+
             const data = EMPRESAS[emp];
             if (!data) {
                 console.error(`Empresa "${emp}" não encontrada.`);
                 toast('Erro: Empresa inválida.', 'err');
-                // Fallback: manter o botão anterior selecionado visualmente
-                document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
-                    if (btn.dataset.empresa === currentEmpresa) {
-                        btn.classList.add('active');
-                    } else {
-                        btn.classList.remove('active');
-                    }
-                });
                 return;
             }
             currentEmpresa = emp;
@@ -2695,14 +2710,6 @@
             
             // Atualizar textos com o modo atual
             updateModeTexts();
-
-            document.querySelectorAll('#empresa-selector .empresa-btn').forEach(btn => {
-                if (btn.dataset.empresa === emp) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
         }
 
         // ── Troca de modo ──
@@ -2876,12 +2883,12 @@
             const map = new Map();
             const respNorm = getFiltroResp().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
             const divergNorm = FALTA_DIVERG_FILTRO.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-            const colNome = getColunaNome(); // Agora sempre retorna a coluna O (índice 13)
+            const colNome = getColunaNome(); // Retorna o índice correto com base no modo (K ou O)
 
             for (const row of rowsFA) {
                 const data = String(row[CF.DATA] ?? '').trim();
                 const carga = String(row[CF.CARGA] ?? '').trim();
-                const motorista = String(row[colNome] ?? '').trim(); // Puxa o nome da coluna O
+                const motorista = String(row[colNome] ?? '').trim(); // Puxa o nome da coluna correta
                 const motivo = normMotivo(row[CF.MOTIVO]);
                 const valor = parseNum(row[CF.VALOR]);
                 const codigo = String(row[CF.CODIGO] ?? '').trim() || '–';
@@ -4189,4 +4196,4 @@
         }
     </script>
 </body>
-</html
+</html>
