@@ -841,6 +841,9 @@
             flex-direction: column;
             transition: all .2s;
             box-shadow: 0 4px 18px rgba(0, 0, 0, .15);
+            /* Efeito metálico padrão base */
+            background-image: linear-gradient(145deg, rgba(255,255,255,0.2), rgba(255,255,255,0.05), rgba(0,0,0,0.1), rgba(255,255,255,0.05), rgba(255,255,255,0.2));
+            border: 1px solid rgba(255,255,255,0.15);
         }
         .kpi-card:hover {
             transform: translateY(-3px);
@@ -855,6 +858,7 @@
             width: 4px;
             border-radius: 12px 0 0 12px;
             background: rgba(255, 255, 255, .35);
+            box-shadow: inset 0 0 6px rgba(255,255,255,0.5);
         }
         .kpi-card::after {
             content: '';
@@ -867,54 +871,63 @@
             background: rgba(255, 255, 255, .08);
             pointer-events: none;
         }
+        /* Efeito Metálico e Cores Vibrantes */
         .kpi-card.k-total {
-            background: linear-gradient(135deg, #1a8fd1, #0cb8a0);
+            background-image: linear-gradient(145deg, #5bc0de, #0d6efd, #023b77, #0d6efd, #5bc0de);
+            border-color: rgba(255,255,255,0.25);
         }
         .kpi-card.k-total::before {
-            background: rgba(255, 255, 255, .35);
+            background: rgba(255, 255, 255, .5);
         }
         .kpi-card.k-total::after {
-            background: rgba(255, 255, 255, .08);
+            background: rgba(255, 255, 255, .15);
         }
         .kpi-card.k-total:hover {
-            box-shadow: 0 8px 28px rgba(14, 122, 191, .35);
+            box-shadow: 0 8px 28px rgba(13, 110, 253, .35);
         }
+
         .kpi-card.k-falta {
-            background: linear-gradient(135deg, #e03050, #c01838);
+            background-image: linear-gradient(145deg, #ff6b81, #dc3545, #8b0000, #dc3545, #ff6b81);
+            border-color: rgba(255,255,255,0.25);
         }
         .kpi-card.k-falta::before {
-            background: rgba(255, 255, 255, .35);
+            background: rgba(255, 255, 255, .5);
         }
         .kpi-card.k-falta::after {
-            background: rgba(255, 255, 255, .08);
+            background: rgba(255, 255, 255, .15);
         }
         .kpi-card.k-falta:hover {
-            box-shadow: 0 8px 28px rgba(220, 48, 80, .4);
+            box-shadow: 0 8px 28px rgba(220, 53, 69, .4);
         }
+
         .kpi-card.k-avaria {
-            background: linear-gradient(135deg, #e07820, #c05808);
+            background-image: linear-gradient(145deg, #ffb347, #fd7e14, #b85c00, #fd7e14, #ffb347);
+            border-color: rgba(255,255,255,0.25);
         }
         .kpi-card.k-avaria::before {
-            background: rgba(255, 255, 255, .35);
+            background: rgba(255, 255, 255, .5);
         }
         .kpi-card.k-avaria::after {
-            background: rgba(255, 255, 255, .08);
+            background: rgba(255, 255, 255, .15);
         }
         .kpi-card.k-avaria:hover {
-            box-shadow: 0 8px 28px rgba(224, 120, 32, .4);
+            box-shadow: 0 8px 28px rgba(253, 126, 20, .4);
         }
+
         .kpi-card.k-sobra {
-            background: linear-gradient(135deg, #0cb880, #089060);
+            background-image: linear-gradient(145deg, #6ee7b7, #198754, #064e3b, #198754, #6ee7b7);
+            border-color: rgba(255,255,255,0.25);
         }
         .kpi-card.k-sobra::before {
-            background: rgba(255, 255, 255, .35);
+            background: rgba(255, 255, 255, .5);
         }
         .kpi-card.k-sobra::after {
-            background: rgba(255, 255, 255, .08);
+            background: rgba(255, 255, 255, .15);
         }
         .kpi-card.k-sobra:hover {
-            box-shadow: 0 8px 28px rgba(12, 184, 128, .4);
+            box-shadow: 0 8px 28px rgba(25, 135, 84, .4);
         }
+
         .kpi-icon {
             font-size: 18px;
             margin-bottom: 14px;
@@ -953,6 +966,7 @@
         .k-avaria .kpi-num,
         .k-sobra .kpi-num {
             color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
         .kpi-unit {
             font-family: var(--sans);
@@ -960,6 +974,7 @@
             font-weight: 500;
             color: rgba(255, 255, 255, .7);
             padding-bottom: 4px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
         .kpi-divider {
             height: 1px;
@@ -986,6 +1001,7 @@
             font-size: 13px;
             font-weight: 600;
             color: #ffffff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
         .table-wrap {
             padding: 0 40px 50px;
@@ -2082,7 +2098,7 @@
     <div id="login-screen">
         <div class="login-box">
             <div class="login-logo">
-                <div class="login-title">🚛 Transporte Unificado</div>
+                <div class="login-title">🚛 Transporte Grupo Andrade</div>
                 <div class="login-sub">Registro de Faltas · Sobras · Avarias</div>
             </div>
             <div class="login-field">
@@ -2468,6 +2484,7 @@
                 theme: 'theme-andrade',
                 logo: '',
                 truck: '',
+                forklift: '', // Nova propriedade para a empilhadeira
                 sheet_consulta: 'CONSULTA',
                 sheet_sobra: '🍁 CONSULTA SOBRA',
                 range_consulta: 'B6:P',
@@ -2486,6 +2503,7 @@
                 theme: 'theme-meta',
                 logo: '',
                 truck: '',
+                forklift: '', // Nova propriedade para a empilhadeira
                 sheet_consulta: 'CONSULTA META',
                 sheet_sobra: 'CONSULTA SOBRA META',
                 range_consulta: 'B6:P',
@@ -2504,6 +2522,7 @@
                 theme: 'theme-mafrios',
                 logo: '',
                 truck: '',
+                forklift: '', // Nova propriedade para a empilhadeira
                 sheet_consulta: 'CONSULTA MAFRIOS',
                 sheet_sobra: 'CONSULTA SOBRA MAFRIOS',
                 range_consulta: 'B6:P',
@@ -2677,6 +2696,20 @@
             return currentMode === 'transporte' ? CF.MOTORISTA : CF.SEPARADOR;
         }
 
+        // ── Atualizar imagem do cabeçalho ──
+        function updateTruckImage() {
+            const empData = EMPRESAS[currentEmpresa];
+            if (!empData) return;
+            const imgEl = document.getElementById('truck-img');
+            if (currentMode === 'transporte') {
+                imgEl.src = empData.truck || '';
+                imgEl.alt = 'Caminhão';
+            } else {
+                imgEl.src = empData.forklift || '';
+                imgEl.alt = 'Empilhadeira';
+            }
+        }
+
         // ── Troca de empresa ──
         function setEmpresa(emp) {
             if (emp === currentEmpresa) return;
@@ -2706,10 +2739,11 @@
             root.setProperty('--text-color', data.css.textColor);
 
             document.getElementById('logo-img').src = data.logo || '';
-            document.getElementById('truck-img').src = data.truck || '';
             
             // Atualizar textos com o modo atual
             updateModeTexts();
+            // Atualizar a imagem do caminhão/empilhadeira
+            updateTruckImage();
         }
 
         // ── Troca de modo ──
@@ -2724,6 +2758,7 @@
                 }
             });
             updateModeTexts();
+            updateTruckImage(); // Atualizar a imagem ao trocar o modo
         }
 
         // ── Atualizar textos dinâmicos de forma segura ──
